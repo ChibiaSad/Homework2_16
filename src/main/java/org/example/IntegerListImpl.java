@@ -15,16 +15,11 @@ public class IntegerListImpl implements IntegerList {
         this.storage = new Integer[10];
     }
 
-    public IntegerListImpl(Integer[] storage) {
-        this.storage = storage;
-        size = storage.length;
-    }
-
     @Override
     public Integer add(Integer item) {
         if (item == null) throw new RuntimeException();
         if (size == storage.length) {
-            storage = Arrays.copyOf(storage, size + 1);
+            grow();
         }
         storage[size++] = item;
         return storage[size - 1];
@@ -37,7 +32,7 @@ public class IntegerListImpl implements IntegerList {
         }
 
         if (size == storage.length) {
-            storage = Arrays.copyOf(storage, size + 1);
+            grow();
         }
 
         if(index == size){
@@ -73,6 +68,9 @@ public class IntegerListImpl implements IntegerList {
 
     @Override
     public Integer remove(int index) {
+        if (index < 0 || index > size) {
+            throw new RuntimeException();
+        }
         Integer removed = storage[index];
         System.arraycopy(storage, index + 1, storage, index, size - (index + 1));
         size--;
@@ -81,8 +79,9 @@ public class IntegerListImpl implements IntegerList {
 
     @Override
     public boolean contains(Integer item) {
-        sortSelection();
-        return binarySearch(item);
+        Integer[] copy = toArray();
+        sort(copy, 0, size - 1);
+        return binarySearch(copy, item);
     }
 
     @Override
@@ -103,7 +102,7 @@ public class IntegerListImpl implements IntegerList {
         if (item == null) throw new RuntimeException();
         int index = -1;
         for (int i = size - 1; i >= 0; i--) {
-            if (Objects.equals(storage[i], item)) {
+            if (storage[i].equals(item)) {
                 index = i;
                 break;
             }
@@ -163,21 +162,31 @@ public class IntegerListImpl implements IntegerList {
         return stringBuilder.toString();
     }
 
-    private void sortSelection() {
-        for (int i = 0; i < storage.length - 1; i++) {
-            int minIndex = i;
-            for (int j = i + 1; j < storage.length; j++) {
-                if (storage[j] < storage[minIndex]) {
-                    minIndex = j;
+    private void sort(Integer[] storage, int start, int end) {
+        if(start < end){
+            int key = storage[end];
+            int j = start - 1;
+
+            for (int i = start; i < end; i++) {
+                if(storage[i] <= key){
+                    j++;
+
+                    int temp = storage[j];
+                    storage[j] = storage[i];
+                    storage[i] = temp;
                 }
             }
-            int tpm = storage[minIndex];
-            storage[minIndex] = storage[i];
-            storage[i] = tpm;
+
+            int temp = storage[end];
+            storage[end] = storage[j + 1];
+            storage[j + 1] = temp;
+
+            sort(storage, start, j);
+            sort(storage, j + 2, end);
         }
     }
 
-    private boolean binarySearch(Integer item){
+    private boolean binarySearch(Integer[] storage, Integer item){
         int min = 0;
         int max = size;
         while(min <= max){
@@ -192,5 +201,9 @@ public class IntegerListImpl implements IntegerList {
             }
         }
         return false;
+    }
+
+    private void grow(){
+        storage = Arrays.copyOf(storage, (int) (size * 1.5));
     }
 }
